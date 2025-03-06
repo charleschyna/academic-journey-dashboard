@@ -7,14 +7,16 @@ const Dashboard = () => {
   const { user, isLoading } = useAuth();
   const location = useLocation();
   
+  // Show loading state while checking authentication
   if (isLoading) {
     return (
       <div className="h-screen flex items-center justify-center">
-        <span className="loader"></span>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>
     );
   }
   
+  // If not authenticated, redirect to login
   if (!user) {
     return <Navigate to="/login" />;
   }
@@ -33,7 +35,8 @@ const Dashboard = () => {
     return <Navigate to="/parent" replace />;
   }
   
-  // Fallback
+  // Fallback - this should never happen with proper role validation
+  console.warn("Unknown user role detected:", user.role);
   return <Navigate to="/login" />;
 };
 
