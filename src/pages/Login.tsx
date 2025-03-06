@@ -48,7 +48,7 @@ const Login = () => {
 
   const onSubmit = async (values: LoginFormValues) => {
     if (mode === 'login') {
-      // Ensure we're passing a complete LoginCredentials object with required properties
+      // Ensure we're passing a complete LoginCredentials object
       const credentials: LoginCredentials = {
         email: values.email,
         password: values.password,
@@ -142,7 +142,7 @@ const Login = () => {
                   className="flex-1 text-xs"
                   onClick={() => {
                     form.setValue('email', 'admin@school.com');
-                    form.setValue('password', 'password');
+                    form.setValue('password', 'password123');
                   }}
                 >
                   Admin
@@ -152,7 +152,7 @@ const Login = () => {
                   className="flex-1 text-xs"
                   onClick={() => {
                     form.setValue('email', 'teacher@school.com');
-                    form.setValue('password', 'password');
+                    form.setValue('password', 'password123');
                   }}
                 >
                   Teacher
@@ -162,7 +162,7 @@ const Login = () => {
                   className="flex-1 text-xs"
                   onClick={() => {
                     form.setValue('email', 'parent@school.com');
-                    form.setValue('password', 'password');
+                    form.setValue('password', 'password123');
                   }}
                 >
                   Parent

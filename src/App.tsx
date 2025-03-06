@@ -11,6 +11,7 @@ import MainLayout from "@/components/layout/MainLayout";
 
 // Pages
 import Login from "./pages/Login";
+import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
 
@@ -54,6 +55,7 @@ const App = () => {
             <Routes>
               {/* Public routes */}
               <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
               
               {/* Dashboard redirect */}
               <Route path="/" element={<Dashboard />} />
