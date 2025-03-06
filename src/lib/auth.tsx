@@ -176,6 +176,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       if (!supabase) {
         // Mock registration for development
+        const mockUser: User = {
+          id: "mock-user-id",
+          email: data.email,
+          role: data.role || 'parent',
+          firstName: data.firstName,
+          lastName: data.lastName,
+          createdAt: new Date().toISOString()
+        };
+        setUser(mockUser);
+        localStorage.setItem('user', JSON.stringify(mockUser));
+        
+        // If registering as a parent, create a mock student
+        if (data.role === 'parent' && data.childDetails) {
+          console.log('Creating mock student:', data.childDetails);
+          // In a real implementation, this would save to Supabase
+        }
+        
         toast.success('Account created successfully (Dev Mode)!');
         navigate('/login');
         return;
@@ -204,6 +221,41 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           ]);
           
         if (profileError) throw profileError;
+        
+        // If registering as a parent, create a student record and link it
+        if (data.role === 'parent' && data.childDetails) {
+          // Create student record
+          const { data: studentData, error: studentError } = await supabase
+            .from('students')
+            .insert([
+              {
+                first_name: data.childDetails.firstName,
+                last_name: data.childDetails.lastName,
+                admission_number: data.childDetails.admissionNumber,
+                date_of_birth: data.childDetails.dateOfBirth,
+                grade: data.childDetails.grade || 'Unknown',
+              }
+            ])
+            .select();
+          
+          if (studentError) throw studentError;
+          
+          // Link parent to student
+          if (studentData && studentData.length > 0) {
+            const { error: parentError } = await supabase
+              .from('parents')
+              .insert([
+                {
+                  first_name: data.firstName,
+                  last_name: data.lastName,
+                  email: data.email,
+                  student_id: studentData[0].id,
+                }
+              ]);
+              
+            if (parentError) throw parentError;
+          }
+        }
         
         toast.success('Account created successfully! Check your email for verification.');
         navigate('/login');

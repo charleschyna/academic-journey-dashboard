@@ -41,10 +41,22 @@ const registerSchema = z.object({
   role: z.enum(['admin', 'teacher', 'parent'], { 
     required_error: "Please select a role"
   }),
+  // Only required for parents
+  childFirstName: z.string().optional(),
+  childLastName: z.string().optional(),
+  childAdmissionNumber: z.string().optional(),
+  childDateOfBirth: z.string().optional(),
+  childGrade: z.string().optional(),
 }).refine(data => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],
-});
+}).refine(
+  data => data.role !== 'parent' || (data.childFirstName && data.childLastName && data.childAdmissionNumber),
+  {
+    message: "Child details are required for parents",
+    path: ["childFirstName"],
+  }
+);
 
 type RegisterFormValues = z.infer<typeof registerSchema>;
 
@@ -60,8 +72,16 @@ const Register = () => {
       firstName: '',
       lastName: '',
       role: 'parent',
+      childFirstName: '',
+      childLastName: '',
+      childAdmissionNumber: '',
+      childDateOfBirth: '',
+      childGrade: '',
     },
   });
+
+  const watchRole = form.watch("role");
+  const isParent = watchRole === 'parent';
 
   const onSubmit = async (values: RegisterFormValues) => {
     const registerData: RegisterData = {
@@ -70,6 +90,13 @@ const Register = () => {
       firstName: values.firstName,
       lastName: values.lastName,
       role: values.role,
+      childDetails: isParent ? {
+        firstName: values.childFirstName || '',
+        lastName: values.childLastName || '',
+        admissionNumber: values.childAdmissionNumber || '',
+        dateOfBirth: values.childDateOfBirth || '',
+        grade: values.childGrade || '',
+      } : undefined
     };
     
     await register(registerData);
@@ -206,10 +233,91 @@ const Register = () => {
                     </FormItem>
                   )}
                 />
+
+                {isParent && (
+                  <>
+                    <div className="mt-6 mb-2">
+                      <h3 className="font-semibold text-sm">Child Information</h3>
+                      <p className="text-xs text-muted-foreground">Please provide your child's details</p>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="childFirstName"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Child's First Name</FormLabel>
+                            <FormControl>
+                              <Input placeholder="First name" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="childLastName"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Child's Last Name</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Last name" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    
+                    <FormField
+                      control={form.control}
+                      name="childAdmissionNumber"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Admission Number</FormLabel>
+                          <FormControl>
+                            <Input placeholder="e.g. AD12345" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="childDateOfBirth"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Date of Birth</FormLabel>
+                            <FormControl>
+                              <Input type="date" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="childGrade"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Grade/Class</FormLabel>
+                            <FormControl>
+                              <Input placeholder="e.g. Form 3A" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </>
+                )}
                 
                 <Button 
                   type="submit" 
-                  className="w-full"
+                  className="w-full mt-6"
                   disabled={isLoading}
                 >
                   {isLoading ? 'Creating account...' : 'Create Account'}

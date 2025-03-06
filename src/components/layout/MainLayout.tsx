@@ -4,6 +4,7 @@ import { Outlet, useLocation, Navigate } from 'react-router-dom';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import SideNav from '@/components/layout/SideNav';
 import { useAuth } from '@/lib/auth';
+import { Toaster } from "@/components/ui/toaster";
 
 const MainLayout = () => {
   const { user, isLoading } = useAuth();
@@ -41,6 +42,7 @@ const MainLayout = () => {
           </footer>
         </main>
       </div>
+      <Toaster />
     </SidebarProvider>
   );
 };

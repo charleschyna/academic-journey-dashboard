@@ -62,6 +62,15 @@ export interface Feedback {
   createdAt: string;
 }
 
+// Child details interface for registration
+export interface ChildDetails {
+  firstName: string;
+  lastName: string;
+  admissionNumber: string;
+  dateOfBirth: string;
+  grade: string;
+}
+
 // Auth related types
 export interface AuthState {
   user: User | null;
@@ -78,6 +87,7 @@ export interface RegisterData extends LoginCredentials {
   firstName: string;
   lastName: string;
   role?: 'admin' | 'teacher' | 'parent';
+  childDetails?: ChildDetails;
 }
 
 // Dashboard related types
