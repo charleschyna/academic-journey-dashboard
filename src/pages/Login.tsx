@@ -24,20 +24,21 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/lib/auth';
+import { LoginCredentials } from '@/types';
 
 const loginSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email address' }),
   password: z.string().min(6, { message: 'Password must be at least 6 characters' }),
 });
 
-type LoginValues = z.infer<typeof loginSchema>;
+type LoginFormValues = z.infer<typeof loginSchema>;
 
 const Login = () => {
   const { login, isLoading } = useAuth();
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const navigate = useNavigate();
 
-  const form = useForm<LoginValues>({
+  const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
       email: '',
@@ -45,9 +46,14 @@ const Login = () => {
     },
   });
 
-  const onSubmit = async (values: LoginValues) => {
+  const onSubmit = async (values: LoginFormValues) => {
     if (mode === 'login') {
-      await login(values);
+      // Ensure we're passing a complete LoginCredentials object with required properties
+      const credentials: LoginCredentials = {
+        email: values.email,
+        password: values.password,
+      };
+      await login(credentials);
     } else {
       // In a real app, this would navigate to registration
       navigate('/register');

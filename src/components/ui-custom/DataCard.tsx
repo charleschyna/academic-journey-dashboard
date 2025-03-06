@@ -1,5 +1,6 @@
 
 import { cn } from '@/lib/utils';
+import { CSSProperties } from 'react';
 
 interface DataCardProps {
   title: string;
@@ -7,14 +8,18 @@ interface DataCardProps {
   icon?: React.ReactNode;
   change?: number;
   className?: string;
+  style?: CSSProperties;
 }
 
-const DataCard = ({ title, value, icon, change, className }: DataCardProps) => {
+const DataCard = ({ title, value, icon, change, className, style }: DataCardProps) => {
   return (
-    <div className={cn(
-      "relative overflow-hidden glass-card p-6 transition-all duration-300 hover:shadow-md",
-      className
-    )}>
+    <div 
+      className={cn(
+        "relative overflow-hidden glass-card p-6 transition-all duration-300 hover:shadow-md",
+        className
+      )}
+      style={style}
+    >
       <div className="flex justify-between items-start">
         <div>
           <p className="text-sm font-medium text-muted-foreground">{title}</p>
