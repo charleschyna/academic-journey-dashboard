@@ -6,9 +6,9 @@ import { User, LoginCredentials, RegisterData } from '@/types';
 import { createClient } from '@supabase/supabase-js';
 
 // Initialize Supabase client
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
-const supabase = createClient(supabaseUrl, supabaseKey);
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+const supabase = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null;
 
 interface AuthContextType {
   user: User | null;
@@ -28,10 +28,32 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   // Check active session and set user
   useEffect(() => {
     try {
+      // For development without Supabase credentials
+      if (!supabase) {
+        console.warn("Supabase credentials missing. Using mock auth.");
+        // Set a mock user for development
+        const mockUser: User = {
+          id: "mock-user-id",
+          email: "test@example.com",
+          role: "admin",
+          firstName: "Test",
+          lastName: "User",
+          createdAt: new Date().toISOString()
+        };
+        setUser(mockUser);
+        localStorage.setItem('user', JSON.stringify(mockUser));
+        setIsLoading(false);
+        return;
+      }
+      
       // Check if user is stored in localStorage as a fallback
-      const storedUser = localStorage.getItem('user');
-      if (storedUser) {
-        setUser(JSON.parse(storedUser));
+      try {
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+          setUser(JSON.parse(storedUser));
+        }
+      } catch (error) {
+        console.error("Failed to parse stored user:", error);
       }
       
       // Set up Supabase auth subscription
@@ -56,11 +78,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
               };
               
               setUser(userData);
-              localStorage.setItem('user', JSON.stringify(userData));
+              try {
+                localStorage.setItem('user', JSON.stringify(userData));
+              } catch (error) {
+                console.error("Failed to store user in localStorage:", error);
+              }
             }
           } else {
             setUser(null);
-            localStorage.removeItem('user');
+            try {
+              localStorage.removeItem('user');
+            } catch (error) {
+              console.error("Failed to remove user from localStorage:", error);
+            }
           }
           setIsLoading(false);
         }
@@ -89,6 +119,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const login = async (credentials: LoginCredentials) => {
     setIsLoading(true);
     try {
+      if (!supabase) {
+        // Mock login for development
+        const mockUser: User = {
+          id: "mock-user-id",
+          email: credentials.email,
+          role: "admin",
+          firstName: "Test",
+          lastName: "User",
+          createdAt: new Date().toISOString()
+        };
+        setUser(mockUser);
+        localStorage.setItem('user', JSON.stringify(mockUser));
+        toast.success('Logged in successfully (Dev Mode)!');
+        navigate('/admin');
+        return;
+      }
+      
       const { data, error } = await supabase.auth.signInWithPassword({
         email: credentials.email,
         password: credentials.password,
@@ -127,6 +174,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const register = async (data: RegisterData) => {
     setIsLoading(true);
     try {
+      if (!supabase) {
+        // Mock registration for development
+        toast.success('Account created successfully (Dev Mode)!');
+        navigate('/login');
+        return;
+      }
+      
       // Register user with Supabase
       const { data: authData, error } = await supabase.auth.signUp({
         email: data.email,
@@ -163,11 +217,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const logout = async () => {
     try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
+      if (supabase) {
+        const { error } = await supabase.auth.signOut();
+        if (error) throw error;
+      }
       
       setUser(null);
-      localStorage.removeItem('user');
+      try {
+        localStorage.removeItem('user');
+      } catch (error) {
+        console.error("Failed to remove user from localStorage:", error);
+      }
       toast.success('Logged out successfully');
       navigate('/login');
     } catch (error: any) {
