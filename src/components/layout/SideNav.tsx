@@ -19,6 +19,7 @@ import {
   User,
   FileText,
   MessageSquare,
+  ClipboardList,
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
@@ -48,9 +49,11 @@ const SideNav = () => {
 
   const teacherLinks = [
     { to: '/teacher', label: 'Dashboard', icon: <Home className="w-5 h-5" /> },
+    { to: '/teacher/classes', label: 'My Classes', icon: <BookOpen className="w-5 h-5" /> },
     { to: '/teacher/grades', label: 'Manage Grades', icon: <FileText className="w-5 h-5" /> },
+    { to: '/teacher/feedback', label: 'Student Feedback', icon: <MessageSquare className="w-5 h-5" /> },
     { to: '/teacher/students', label: 'My Students', icon: <Users className="w-5 h-5" /> },
-    { to: '/teacher/feedback', label: 'Send Feedback', icon: <MessageSquare className="w-5 h-5" /> },
+    { to: '/teacher/analytics', label: 'Class Analytics', icon: <BarChart3 className="w-5 h-5" /> },
   ];
 
   const parentLinks = [
