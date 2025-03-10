@@ -1,4 +1,3 @@
-
 import { useState, useEffect, createContext, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -120,11 +119,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setIsLoading(true);
     try {
       if (!supabase) {
-        // Mock login for development - Use the specified role instead of always admin
+        // Mock login for development - Use the specified role instead of always parent
         const mockUser: User = {
           id: "mock-user-id",
           email: credentials.email,
-          role: "parent", // Default to parent for testing the fix
+          role: credentials.email.includes('teacher') ? 'teacher' : 
+                credentials.email.includes('admin') ? 'admin' : 'parent',
           firstName: "Test",
           lastName: "User",
           createdAt: new Date().toISOString()
@@ -133,8 +133,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         localStorage.setItem('user', JSON.stringify(mockUser));
         toast.success('Logged in successfully (Dev Mode)!');
         
-        // Redirect based on role - ensure parent goes to parent route
-        navigate('/parent');
+        // Redirect based on role
+        if (mockUser.role === 'admin') {
+          navigate('/admin');
+        } else if (mockUser.role === 'teacher') {
+          navigate('/teacher');
+        } else {
+          navigate('/parent');
+        }
         return;
       }
       
