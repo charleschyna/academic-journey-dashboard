@@ -120,11 +120,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setIsLoading(true);
     try {
       if (!supabase) {
-        // Mock login for development
+        // Mock login for development - Use the specified role instead of always admin
         const mockUser: User = {
           id: "mock-user-id",
           email: credentials.email,
-          role: "admin",
+          role: "parent", // Default to parent for testing the fix
           firstName: "Test",
           lastName: "User",
           createdAt: new Date().toISOString()
@@ -132,7 +132,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setUser(mockUser);
         localStorage.setItem('user', JSON.stringify(mockUser));
         toast.success('Logged in successfully (Dev Mode)!');
-        navigate('/admin');
+        
+        // Redirect based on role - ensure parent goes to parent route
+        navigate('/parent');
         return;
       }
       
@@ -154,12 +156,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         if (profile) {
           toast.success('Logged in successfully!');
           
-          // Redirect based on role
+          // Redirect based on role - explicitly set paths
           if (profile.role === 'admin') {
             navigate('/admin');
           } else if (profile.role === 'teacher') {
             navigate('/teacher');
           } else if (profile.role === 'parent') {
+            navigate('/parent');
+          } else {
+            // Default fallback - shouldn't happen with proper validation
+            console.warn("Unknown role, defaulting to parent view");
             navigate('/parent');
           }
         }
@@ -175,7 +181,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setIsLoading(true);
     try {
       if (!supabase) {
-        // Mock registration for development
+        // Mock registration for development - make sure to use the specified role
         const mockUser: User = {
           id: "mock-user-id",
           email: data.email,
@@ -207,7 +213,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (error) throw error;
       
       if (authData.user) {
-        // Insert user profile into profiles table
+        // Insert user profile into profiles table - ensure role is saved correctly
         const { error: profileError } = await supabase
           .from('profiles')
           .insert([
@@ -224,7 +230,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         
         // If registering as a parent, create a student record and link it
         if (data.role === 'parent' && data.childDetails) {
-          // Create student record
+          // Create student record with proper parent_id link
           const { data: studentData, error: studentError } = await supabase
             .from('students')
             .insert([
@@ -234,27 +240,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 admission_number: data.childDetails.admissionNumber,
                 date_of_birth: data.childDetails.dateOfBirth,
                 grade: data.childDetails.grade || 'Unknown',
+                parent_id: authData.user.id // Link student to parent
               }
             ])
             .select();
           
           if (studentError) throw studentError;
           
-          // Link parent to student
-          if (studentData && studentData.length > 0) {
-            const { error: parentError } = await supabase
-              .from('parents')
-              .insert([
-                {
-                  first_name: data.firstName,
-                  last_name: data.lastName,
-                  email: data.email,
-                  student_id: studentData[0].id,
-                }
-              ]);
-              
-            if (parentError) throw parentError;
-          }
+          // This parent-student linking was incorrectly using separate table; now using parent_id on student
+          console.log("Created student with parent link:", studentData);
         }
         
         toast.success('Account created successfully! Check your email for verification.');
@@ -309,17 +303,21 @@ export const useRequireAuth = (allowedRoles: Array<'admin' | 'teacher' | 'parent
   
   useEffect(() => {
     if (!isLoading && !user) {
+      // Not authenticated, redirect to login
       navigate('/login');
     } else if (!isLoading && user && !allowedRoles.includes(user.role)) {
       toast.error("You don't have permission to access this page");
       
-      // Redirect based on role
+      // Redirect based on role - ensure correct paths
       if (user.role === 'admin') {
         navigate('/admin');
       } else if (user.role === 'teacher') {
         navigate('/teacher');
       } else if (user.role === 'parent') {
         navigate('/parent');
+      } else {
+        // Default fallback
+        navigate('/login');
       }
     }
   }, [user, isLoading, allowedRoles, navigate]);

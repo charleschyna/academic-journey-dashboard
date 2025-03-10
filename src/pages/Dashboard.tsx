@@ -26,7 +26,9 @@ const Dashboard = () => {
     return null;
   }
   
-  // Redirect based on user role
+  console.log("User role for redirection:", user.role);
+  
+  // Redirect based on user role - ensure proper paths
   if (user.role === 'admin') {
     return <Navigate to="/admin" replace />;
   } else if (user.role === 'teacher') {

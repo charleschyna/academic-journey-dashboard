@@ -1,74 +1,72 @@
-
 import { createClient } from '@supabase/supabase-js';
-import { toast } from 'sonner';
-import { 
-  Student, 
-  Teacher, 
-  Parent, 
-  Subject, 
-  Grade, 
-  Feedback,
-  Profile
-} from '@/types';
+import { Grade, Student, Subject, User, Profile, StudentRecord, GradeRecord, FeedbackRecord } from '@/types';
 
 // Initialize Supabase client
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
-export const supabase = createClient(supabaseUrl, supabaseKey);
+export const supabase = supabaseUrl && supabaseKey 
+  ? createClient(supabaseUrl, supabaseKey) 
+  : null;
 
-// Profiles
-export const getProfiles = async (role?: 'admin' | 'teacher' | 'parent') => {
-  try {
-    let query = supabase.from('profiles').select('*');
+// User functions
+export const getProfile = async (userId: string) => {
+  if (!supabase) return null;
+  
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', userId)
+    .single();
     
-    if (role) {
-      query = query.eq('role', role);
-    }
-    
-    const { data, error } = await query;
-    
-    if (error) throw error;
-    return data as Profile[];
-  } catch (error: any) {
-    toast.error(error.message || 'Failed to fetch profiles');
-    return [];
+  if (error) {
+    console.error('Error fetching profile:', error);
+    return null;
   }
+  
+  return data as Profile;
 };
 
-// Students
-export const getStudents = async (parentId?: string) => {
-  try {
-    let query = supabase.from('students').select('*');
+// Student functions
+export const getStudents = async () => {
+  if (!supabase) return [];
+  
+  const { data, error } = await supabase
+    .from('students')
+    .select('*')
+    .order('created_at', { ascending: false });
     
-    if (parentId) {
-      query = query.eq('parent_id', parentId);
-    }
-    
-    const { data, error } = await query;
-    
-    if (error) throw error;
-    
-    return data.map(item => ({
-      id: item.id,
-      firstName: item.first_name,
-      lastName: item.last_name,
-      admissionNumber: item.admission_number,
-      dateOfBirth: item.date_of_birth,
-      grade: item.grade,
-      stream: item.stream,
-      parentId: item.parent_id,
-      createdAt: item.created_at,
-    })) as Student[];
-  } catch (error: any) {
-    toast.error(error.message || 'Failed to fetch students');
+  if (error) {
+    console.error('Error fetching students:', error);
     return [];
   }
+  
+  return data as StudentRecord[];
 };
 
-export const createStudent = async (student: Omit<Student, 'id' | 'createdAt'>) => {
-  try {
-    const { data, error } = await supabase.from('students').insert([
+export const getStudentById = async (id: string) => {
+  if (!supabase) return null;
+  
+  const { data, error } = await supabase
+    .from('students')
+    .select('*')
+    .eq('id', id)
+    .single();
+    
+  if (error) {
+    console.error('Error fetching student:', error);
+    return null;
+  }
+  
+  return data as StudentRecord;
+};
+
+export const addStudent = async (student: Omit<Student, 'id' | 'createdAt'>) => {
+  if (!supabase) return null;
+  
+  const { data, error } = await supabase
+    .from('students')
+    .insert([
       {
         first_name: student.firstName,
         last_name: student.lastName,
@@ -76,174 +74,216 @@ export const createStudent = async (student: Omit<Student, 'id' | 'createdAt'>) 
         date_of_birth: student.dateOfBirth,
         grade: student.grade,
         stream: student.stream,
-        parent_id: student.parentId,
+        parent_id: student.parentId
       }
-    ]).select();
+    ])
+    .select();
     
-    if (error) throw error;
-    
-    toast.success('Student created successfully');
-    return data[0];
-  } catch (error: any) {
-    toast.error(error.message || 'Failed to create student');
-    return null;
+  if (error) {
+    console.error('Error adding student:', error);
+    throw error;
   }
+  
+  return data;
 };
 
-// Teachers
-export const getTeachers = async () => {
-  try {
-    const { data, error } = await supabase
-      .from('teachers')
-      .select('*, profiles(*)');
-    
-    if (error) throw error;
-    
-    return data.map(item => ({
-      id: item.id,
-      userId: item.user_id,
-      subjectsTaught: item.subjects_taught,
-      createdAt: item.created_at,
-      firstName: item.profiles?.first_name,
-      lastName: item.profiles?.last_name,
-      email: item.profiles?.email,
-    }));
-  } catch (error: any) {
-    toast.error(error.message || 'Failed to fetch teachers');
-    return [];
-  }
-};
-
-// Subjects
+// Subject functions
 export const getSubjects = async () => {
-  try {
-    const { data, error } = await supabase.from('subjects').select('*');
+  if (!supabase) return [];
+  
+  const { data, error } = await supabase
+    .from('subjects')
+    .select('*')
+    .order('name', { ascending: true });
     
-    if (error) throw error;
-    
-    return data.map(item => ({
-      id: item.id,
-      name: item.name,
-      code: item.code,
-      createdAt: item.created_at,
-    })) as Subject[];
-  } catch (error: any) {
-    toast.error(error.message || 'Failed to fetch subjects');
+  if (error) {
+    console.error('Error fetching subjects:', error);
     return [];
   }
+  
+  return data as Subject[];
 };
 
-// Grades
-export const getGrades = async (studentId?: string, teacherId?: string) => {
-  try {
-    let query = supabase
-      .from('grades')
-      .select('*, students(*), subjects(*), profiles(*)');
-    
-    if (studentId) {
-      query = query.eq('student_id', studentId);
-    }
-    
-    if (teacherId) {
-      query = query.eq('teacher_id', teacherId);
-    }
-    
-    const { data, error } = await query;
-    
-    if (error) throw error;
-    
-    return data.map(item => ({
-      id: item.id,
-      studentId: item.student_id,
-      subjectId: item.subject_id,
-      teacherId: item.teacher_id,
-      score: item.score,
-      term: item.term,
-      academicYear: item.academic_year,
-      comment: item.comment,
-      createdAt: item.created_at,
-      studentName: `${item.students?.first_name} ${item.students?.last_name}`,
-      subjectName: item.subjects?.name,
-      teacherName: `${item.profiles?.first_name} ${item.profiles?.last_name}`,
-    }));
-  } catch (error: any) {
-    toast.error(error.message || 'Failed to fetch grades');
-    return [];
-  }
-};
-
-export const createGrade = async (grade: Omit<Grade, 'id' | 'createdAt'>) => {
-  try {
-    const { data, error } = await supabase.from('grades').insert([
+export const addSubject = async (subject: Omit<Subject, 'id' | 'createdAt'>) => {
+  if (!supabase) return null;
+  
+  const { data, error } = await supabase
+    .from('subjects')
+    .insert([
       {
-        student_id: grade.studentId,
-        subject_id: grade.subjectId,
-        teacher_id: grade.teacherId,
+        name: subject.name,
+        code: subject.code
+      }
+    ])
+    .select();
+    
+  if (error) {
+    console.error('Error adding subject:', error);
+    throw error;
+  }
+  
+  return data;
+};
+
+// Grade functions
+export const getGrades = async (studentId?: string) => {
+  if (!supabase) return [];
+  
+  let query = supabase
+    .from('grades')
+    .select(`
+      *,
+      subjects (
+        name,
+        code,
+        id,
+        created_at
+      ),
+      teachers (
+        first_name,
+        last_name
+      )
+    `)
+    .order('created_at', { ascending: false });
+    
+  if (studentId) {
+    query = query.eq('student_id', studentId);
+  }
+  
+  const { data, error } = await query;
+  
+  if (error) {
+    console.error('Error fetching grades:', error);
+    return [];
+  }
+  
+  return data as GradeRecord[];
+};
+
+export const addGrade = async (grade: Omit<Grade, 'id' | 'createdAt'>) => {
+  const { data, error } = await supabase
+    .from('grades')
+    .insert([
+      {
+        student_id: grade.student_id,
+        subject_id: grade.subject_id,
+        teacher_id: grade.teacher_id,
         score: grade.score,
         term: grade.term,
-        academic_year: grade.academicYear,
-        comment: grade.comment,
+        year: grade.year
       }
-    ]).select();
-    
-    if (error) throw error;
-    
-    toast.success('Grade recorded successfully');
-    return data[0];
-  } catch (error: any) {
-    toast.error(error.message || 'Failed to record grade');
-    return null;
+    ])
+    .select();
+
+  if (error) {
+    throw error;
   }
+  
+  return data;
 };
 
-// Feedback
+// Feedback functions
 export const getFeedback = async (studentId?: string) => {
-  try {
-    let query = supabase
-      .from('feedback')
-      .select('*, students(*), profiles(*)');
+  if (!supabase) return [];
+  
+  let query = supabase
+    .from('feedback')
+    .select(`
+      *,
+      teachers (
+        first_name,
+        last_name
+      ),
+      subjects (
+        name
+      )
+    `)
+    .order('created_at', { ascending: false });
     
-    if (studentId) {
-      query = query.eq('student_id', studentId);
-    }
-    
-    const { data, error } = await query;
-    
-    if (error) throw error;
-    
-    return data.map(item => ({
-      id: item.id,
-      studentId: item.student_id,
-      teacherId: item.teacher_id,
-      content: item.content,
-      date: item.date,
-      createdAt: item.created_at,
-      studentName: `${item.students?.first_name} ${item.students?.last_name}`,
-      teacherName: `${item.profiles?.first_name} ${item.profiles?.last_name}`,
-    })) as Feedback[];
-  } catch (error: any) {
-    toast.error(error.message || 'Failed to fetch feedback');
+  if (studentId) {
+    query = query.eq('student_id', studentId);
+  }
+  
+  const { data, error } = await query;
+  
+  if (error) {
+    console.error('Error fetching feedback:', error);
     return [];
   }
+  
+  return data as FeedbackRecord[];
 };
 
-export const createFeedback = async (feedback: Omit<Feedback, 'id' | 'createdAt'>) => {
-  try {
-    const { data, error } = await supabase.from('feedback').insert([
-      {
-        student_id: feedback.studentId,
-        teacher_id: feedback.teacherId,
-        content: feedback.content,
-        date: feedback.date,
-      }
-    ]).select();
+export const addFeedback = async (feedback: {
+  student_id: string;
+  teacher_id: string;
+  comment: string;
+}) => {
+  if (!supabase) return null;
+  
+  const { data, error } = await supabase
+    .from('feedback')
+    .insert([feedback])
+    .select();
     
-    if (error) throw error;
-    
-    toast.success('Feedback sent successfully');
-    return data[0];
-  } catch (error: any) {
-    toast.error(error.message || 'Failed to send feedback');
-    return null;
+  if (error) {
+    console.error('Error adding feedback:', error);
+    throw error;
   }
+  
+  return data;
+};
+
+// Teacher functions
+export const getTeachers = async () => {
+  if (!supabase) return [];
+  
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('role', 'teacher')
+    .order('created_at', { ascending: false });
+    
+  if (error) {
+    console.error('Error fetching teachers:', error);
+    return [];
+  }
+  
+  return data as User[];
+};
+
+// Parent functions
+export const getParents = async () => {
+  if (!supabase) return [];
+  
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('role', 'parent')
+    .order('created_at', { ascending: false });
+    
+  if (error) {
+    console.error('Error fetching parents:', error);
+    return [];
+  }
+  
+  return data as User[];
+};
+
+// Get students for a specific parent
+export const getParentStudents = async (parentId: string) => {
+  if (!supabase) return [];
+  
+  const { data, error } = await supabase
+    .from('students')
+    .select('*')
+    .eq('parent_id', parentId)
+    .order('created_at', { ascending: false });
+    
+  if (error) {
+    console.error('Error fetching parent students:', error);
+    return [];
+  }
+  
+  return data as StudentRecord[];
 };

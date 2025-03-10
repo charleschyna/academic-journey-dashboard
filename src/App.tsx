@@ -88,7 +88,7 @@ const App = () => {
                   <Route path="/teacher/students" element={<ManageUsers />} />
                   <Route path="/teacher/feedback" element={<ManageUsers />} />
                   
-                  {/* Parent routes */}
+                  {/* Parent routes - ensure these are correctly defined */}
                   <Route path="/parent" element={<ParentDashboard />} />
                   <Route path="/parent/grades" element={<ParentDashboard />} />
                   <Route path="/parent/feedback" element={<ParentDashboard />} />
