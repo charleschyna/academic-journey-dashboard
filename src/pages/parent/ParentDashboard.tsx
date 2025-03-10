@@ -11,30 +11,12 @@ import { Button } from '@/components/ui/button';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Student, Grade } from '@/types';
+import { Student, StudentRecord, GradeRecord, FeedbackRecord } from '@/types';
 
-interface GradeWithSubject extends Grade {
-  subjects: {
-    name: string;
-    code: string;
-  };
-  teachers: {
-    first_name: string;
-    last_name: string;
-  };
-}
-
-interface FeedbackWithDetails {
-  id: string;
-  content: string;
-  date: string;
-  teachers: {
-    first_name: string;
-    last_name: string;
-  };
-  subjects: {
-    name: string;
-  };
+interface GradeDisplayProps {
+  score: number;
+  grade: string;
+  color: string;
 }
 
 const ParentDashboard = () => {
@@ -58,7 +40,18 @@ const ParentDashboard = () => {
         return [];
       }
       
-      return data as Student[];
+      // Map database records to Student interface
+      return data.map((record: StudentRecord) => ({
+        id: record.id,
+        firstName: record.first_name,
+        lastName: record.last_name,
+        admissionNumber: record.admission_number,
+        dateOfBirth: record.date_of_birth,
+        grade: record.grade || '',
+        stream: record.stream || '',
+        parentId: record.parent_id,
+        createdAt: record.created_at
+      })) as Student[];
     },
     enabled: !!user,
   });
@@ -80,8 +73,8 @@ const ParentDashboard = () => {
         .from('grades')
         .select(`
           *,
-          subjects:subject_id(*),
-          teachers:teacher_id(first_name, last_name)
+          subjects(*),
+          teachers(first_name, last_name)
         `)
         .eq('student_id', selectedChild);
         
@@ -91,7 +84,20 @@ const ParentDashboard = () => {
         return [];
       }
       
-      return data as GradeWithSubject[];
+      // Map to expected format
+      return data.map((record: GradeRecord) => ({
+        id: record.id,
+        studentId: record.student_id,
+        subjectId: record.subject_id,
+        teacherId: record.teacher_id,
+        score: record.score,
+        term: record.term,
+        academicYear: record.year.toString(),
+        comment: '',
+        createdAt: record.created_at,
+        subjects: record.subjects,
+        teachers: record.teachers
+      }));
     },
     enabled: !!selectedChild,
   });
@@ -106,8 +112,7 @@ const ParentDashboard = () => {
         .from('feedback')
         .select(`
           *,
-          teachers:teacher_id(first_name, last_name),
-          subjects:subject_id(name)
+          teachers(first_name, last_name)
         `)
         .eq('student_id', selectedChild);
         
@@ -117,7 +122,14 @@ const ParentDashboard = () => {
         return [];
       }
       
-      return data as FeedbackWithDetails[];
+      // Map to expected format
+      return data.map((record: FeedbackRecord) => ({
+        id: record.id,
+        content: record.comment,
+        date: record.created_at,
+        teachers: record.teachers,
+        subjects: record.subjects || { name: 'General' }
+      }));
     },
     enabled: !!selectedChild,
   });
@@ -221,12 +233,12 @@ const ParentDashboard = () => {
   const childStats = calculateStats();
   
   // Format grades data for display
-  const getGradeDisplay = (score: number) => {
-    if (score >= 80) return { grade: 'A', color: 'text-green-600' };
-    if (score >= 70) return { grade: 'B', color: 'text-blue-600' };
-    if (score >= 60) return { grade: 'C', color: 'text-amber-600' };
-    if (score >= 50) return { grade: 'D', color: 'text-orange-600' };
-    return { grade: 'E', color: 'text-red-600' };
+  const getGradeDisplay = (score: number): GradeDisplayProps => {
+    if (score >= 80) return { grade: 'A', color: 'text-green-600', score };
+    if (score >= 70) return { grade: 'B', color: 'text-blue-600', score };
+    if (score >= 60) return { grade: 'C', color: 'text-amber-600', score };
+    if (score >= 50) return { grade: 'D', color: 'text-orange-600', score };
+    return { grade: 'E', color: 'text-red-600', score };
   };
   
   return (
@@ -359,7 +371,7 @@ const ParentDashboard = () => {
                             {item.teachers ? `${item.teachers.first_name} ${item.teachers.last_name}` : 'Unknown Teacher'}
                           </h4>
                           <p className="text-sm text-muted-foreground">
-                            {item.subjects?.name || 'Unknown Subject'}
+                            {item.subjects?.name || 'General Feedback'}
                           </p>
                         </div>
                         <div className="text-sm text-muted-foreground">

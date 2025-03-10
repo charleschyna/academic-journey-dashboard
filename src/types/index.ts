@@ -1,4 +1,3 @@
-
 export interface User {
   id: string;
   email: string;
@@ -43,14 +42,13 @@ export interface Subject {
 
 export interface Grade {
   id: string;
-  studentId: string;
-  subjectId: string;
-  teacherId: string;
+  student_id: string;
+  subject_id: string;
+  teacher_id: string;
   score: number;
   term: string;
-  academicYear: string;
-  comment: string;
-  createdAt: string;
+  year: number;
+  created_at: string;
 }
 
 export interface Feedback {
@@ -62,7 +60,6 @@ export interface Feedback {
   createdAt: string;
 }
 
-// Child details interface for registration
 export interface ChildDetails {
   firstName: string;
   lastName: string;
@@ -71,7 +68,6 @@ export interface ChildDetails {
   grade: string;
 }
 
-// Auth related types
 export interface AuthState {
   user: User | null;
   isLoading: boolean;
@@ -90,7 +86,6 @@ export interface RegisterData extends LoginCredentials {
   childDetails?: ChildDetails;
 }
 
-// Dashboard related types
 export interface DashboardStat {
   title: string;
   value: number | string;
@@ -98,7 +93,6 @@ export interface DashboardStat {
   icon?: React.ReactNode;
 }
 
-// Table related types
 export interface Column<T> {
   id: string;
   header: string;
@@ -106,7 +100,6 @@ export interface Column<T> {
   cell?: (info: T) => React.ReactNode;
 }
 
-// Supabase profiles table type
 export interface Profile {
   id: string;
   first_name: string;
@@ -115,4 +108,66 @@ export interface Profile {
   role: 'admin' | 'teacher' | 'parent';
   created_at: string;
   updated_at: string;
+}
+
+export interface StudentRecord {
+  id: string;
+  first_name: string;
+  last_name: string;
+  admission_number: string;
+  date_of_birth: string;
+  grade: string;
+  stream: string;
+  parent_id: string | null;
+  created_at: string;
+}
+
+export interface GradeRecord {
+  id: string;
+  student_id: string;
+  subject_id: string;
+  teacher_id: string;
+  score: number;
+  term: string;
+  year: number;
+  created_at: string;
+  subjects: {
+    name: string;
+    code: string;
+    id: string;
+    created_at: string;
+  };
+  teachers: {
+    first_name: string;
+    last_name: string;
+  };
+}
+
+export interface FeedbackRecord {
+  id: string;
+  student_id: string;
+  teacher_id: string;
+  comment: string;
+  created_at: string;
+  teachers: {
+    first_name: string;
+    last_name: string;
+  };
+  subjects?: {
+    name: string;
+  };
+}
+
+export interface SubjectWithTeachers extends Subject {
+  teachers: string[];
+}
+
+export interface ReportData {
+  id: string;
+  title: string;
+  description: string;
+  date: string;
+  type: 'academic' | 'behavior' | 'attendance';
+  studentId: string;
+  downloadUrl?: string;
 }
