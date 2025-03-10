@@ -165,24 +165,33 @@ export type Database = {
           created_at: string | null
           date_of_birth: string
           first_name: string
+          grade: string | null
           id: string
           last_name: string
+          parent_id: string | null
+          stream: string | null
         }
         Insert: {
           admission_number: string
           created_at?: string | null
           date_of_birth: string
           first_name: string
+          grade?: string | null
           id?: string
           last_name: string
+          parent_id?: string | null
+          stream?: string | null
         }
         Update: {
           admission_number?: string
           created_at?: string | null
           date_of_birth?: string
           first_name?: string
+          grade?: string | null
           id?: string
           last_name?: string
+          parent_id?: string | null
+          stream?: string | null
         }
         Relationships: []
       }

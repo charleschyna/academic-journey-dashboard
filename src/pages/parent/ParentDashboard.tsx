@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { User, BookOpen, GraduationCap, ClipboardCheck } from 'lucide-react';
 import { useRequireAuth } from '@/lib/auth';
 import PageHeader from '@/components/ui-custom/PageHeader';
@@ -8,10 +8,180 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { Student, Grade } from '@/types';
+
+interface GradeWithSubject extends Grade {
+  subjects: {
+    name: string;
+    code: string;
+  };
+  teachers: {
+    first_name: string;
+    last_name: string;
+  };
+}
+
+interface FeedbackWithDetails {
+  id: string;
+  content: string;
+  date: string;
+  teachers: {
+    first_name: string;
+    last_name: string;
+  };
+  subjects: {
+    name: string;
+  };
+}
 
 const ParentDashboard = () => {
-  const { user, isLoading } = useRequireAuth(['parent']);
-  const [selectedChild, setSelectedChild] = useState(0);
+  const { user, isLoading: authLoading } = useRequireAuth(['parent']);
+  const [selectedChild, setSelectedChild] = useState<string | null>(null);
+  
+  // Fetch children for parent
+  const { data: children, isLoading: childrenLoading } = useQuery({
+    queryKey: ['children', user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      
+      const { data, error } = await supabase
+        .from('students')
+        .select('*')
+        .eq('parent_id', user.id);
+        
+      if (error) {
+        toast.error('Error loading children data');
+        console.error('Error fetching children:', error);
+        return [];
+      }
+      
+      return data as Student[];
+    },
+    enabled: !!user,
+  });
+  
+  // Set first child as selected on initial load
+  useEffect(() => {
+    if (children && children.length > 0 && !selectedChild) {
+      setSelectedChild(children[0].id);
+    }
+  }, [children, selectedChild]);
+  
+  // Fetch grades for selected child
+  const { data: grades, isLoading: gradesLoading } = useQuery({
+    queryKey: ['grades', selectedChild],
+    queryFn: async () => {
+      if (!selectedChild) return [];
+      
+      const { data, error } = await supabase
+        .from('grades')
+        .select(`
+          *,
+          subjects:subject_id(*),
+          teachers:teacher_id(first_name, last_name)
+        `)
+        .eq('student_id', selectedChild);
+        
+      if (error) {
+        toast.error('Error loading grades data');
+        console.error('Error fetching grades:', error);
+        return [];
+      }
+      
+      return data as GradeWithSubject[];
+    },
+    enabled: !!selectedChild,
+  });
+  
+  // Fetch feedback for selected child
+  const { data: feedback, isLoading: feedbackLoading } = useQuery({
+    queryKey: ['feedback', selectedChild],
+    queryFn: async () => {
+      if (!selectedChild) return [];
+      
+      const { data, error } = await supabase
+        .from('feedback')
+        .select(`
+          *,
+          teachers:teacher_id(first_name, last_name),
+          subjects:subject_id(name)
+        `)
+        .eq('student_id', selectedChild);
+        
+      if (error) {
+        toast.error('Error loading feedback data');
+        console.error('Error fetching feedback:', error);
+        return [];
+      }
+      
+      return data as FeedbackWithDetails[];
+    },
+    enabled: !!selectedChild,
+  });
+  
+  // Calculate stats based on real data
+  const calculateStats = () => {
+    if (!grades || grades.length === 0) {
+      return [
+        {
+          title: 'Average Grade',
+          value: 'N/A',
+          icon: <ClipboardCheck className="h-5 w-5" />,
+        },
+        {
+          title: 'Subjects',
+          value: '0',
+          icon: <BookOpen className="h-5 w-5" />,
+        },
+        {
+          title: 'Attendance',
+          value: 'N/A',
+          icon: <User className="h-5 w-5" />,
+        },
+        {
+          title: 'Class Rank',
+          value: 'N/A',
+          icon: <GraduationCap className="h-5 w-5" />,
+        }
+      ];
+    }
+    
+    // Calculate average score
+    const totalScore = grades.reduce((sum, grade) => sum + grade.score, 0);
+    const averageScore = Math.round(totalScore / grades.length);
+    
+    // Count unique subjects
+    const uniqueSubjects = new Set(grades.map(grade => grade.subjectId)).size;
+    
+    return [
+      {
+        title: 'Average Grade',
+        value: `${averageScore}%`,
+        icon: <ClipboardCheck className="h-5 w-5" />,
+        change: 0, // We don't have historical data yet
+      },
+      {
+        title: 'Subjects',
+        value: uniqueSubjects.toString(),
+        icon: <BookOpen className="h-5 w-5" />,
+      },
+      {
+        title: 'Attendance',
+        value: '96%', // Placeholder, until we have attendance data
+        icon: <User className="h-5 w-5" />,
+      },
+      {
+        title: 'Class Rank',
+        value: 'N/A', // We don't have ranking data yet
+        icon: <GraduationCap className="h-5 w-5" />,
+      }
+    ];
+  };
+  
+  const isLoading = authLoading || childrenLoading;
   
   if (isLoading || !user) {
     return (
@@ -21,143 +191,42 @@ const ParentDashboard = () => {
     );
   }
   
-  // Mock child data
-  const children = [
-    {
-      id: 1,
-      name: 'James Mwangi',
-      grade: 'Form 3A',
-      photo: '',
-      stats: [
-        {
-          title: 'Average Grade',
-          value: '75%',
-          icon: <ClipboardCheck className="h-5 w-5" />,
-          change: 2.5,
-        },
-        {
-          title: 'Attendance',
-          value: '96%',
-          icon: <User className="h-5 w-5" />,
-          change: 1.2,
-        },
-        {
-          title: 'Subjects',
-          value: '8',
-          icon: <BookOpen className="h-5 w-5" />,
-          change: 0,
-        },
-        {
-          title: 'Class Rank',
-          value: '7/45',
-          icon: <GraduationCap className="h-5 w-5" />,
-          change: 4,
-        }
-      ],
-      subjects: [
-        { name: 'Mathematics', grade: 'B+', percentage: 78, teacher: 'Mr. Otieno' },
-        { name: 'English', grade: 'A-', percentage: 82, teacher: 'Mrs. Kamau' },
-        { name: 'Kiswahili', grade: 'B', percentage: 72, teacher: 'Mr. Wekesa' },
-        { name: 'Biology', grade: 'A', percentage: 85, teacher: 'Mrs. Oloo' },
-        { name: 'Chemistry', grade: 'B+', percentage: 77, teacher: 'Mr. Gitonga' },
-        { name: 'Physics', grade: 'B', percentage: 70, teacher: 'Mrs. Njeri' },
-        { name: 'History', grade: 'A-', percentage: 81, teacher: 'Mr. Omar' },
-        { name: 'Geography', grade: 'B+', percentage: 75, teacher: 'Mrs. Wambui' },
-      ],
-      feedback: [
-        { 
-          teacher: 'Mr. Otieno', 
-          subject: 'Mathematics', 
-          date: 'June 3, 2023', 
-          message: 'James has shown significant improvement in calculus this term. Keep encouraging him to practice regularly.'
-        },
-        { 
-          teacher: 'Mrs. Kamau', 
-          subject: 'English', 
-          date: 'May 28, 2023', 
-          message: 'James writes excellent essays, but needs to work on his grammar and punctuation.'
-        },
-        { 
-          teacher: 'Mr. Gitonga', 
-          subject: 'Chemistry', 
-          date: 'May 15, 2023', 
-          message: 'James performs well in practical experiments but needs to improve his theoretical knowledge.'
-        },
-      ]
-    },
-    {
-      id: 2,
-      name: 'Lucy Mwangi',
-      grade: 'Form 1B',
-      photo: '',
-      stats: [
-        {
-          title: 'Average Grade',
-          value: '82%',
-          icon: <ClipboardCheck className="h-5 w-5" />,
-          change: 5.2,
-        },
-        {
-          title: 'Attendance',
-          value: '98%',
-          icon: <User className="h-5 w-5" />,
-          change: 0.7,
-        },
-        {
-          title: 'Subjects',
-          value: '8',
-          icon: <BookOpen className="h-5 w-5" />,
-          change: 0,
-        },
-        {
-          title: 'Class Rank',
-          value: '3/48',
-          icon: <GraduationCap className="h-5 w-5" />,
-          change: 1,
-        }
-      ],
-      subjects: [
-        { name: 'Mathematics', grade: 'A', percentage: 86, teacher: 'Mrs. Moraa' },
-        { name: 'English', grade: 'A', percentage: 88, teacher: 'Mr. Kamau' },
-        { name: 'Kiswahili', grade: 'A-', percentage: 81, teacher: 'Mrs. Achieng' },
-        { name: 'Biology', grade: 'B+', percentage: 78, teacher: 'Mr. Maina' },
-        { name: 'Chemistry', grade: 'A-', percentage: 82, teacher: 'Mrs. Omondi' },
-        { name: 'Physics', grade: 'B+', percentage: 77, teacher: 'Mr. Mwangi' },
-        { name: 'History', grade: 'A', percentage: 85, teacher: 'Mrs. Njau' },
-        { name: 'Geography', grade: 'A-', percentage: 80, teacher: 'Mr. Ochieng' },
-      ],
-      feedback: [
-        { 
-          teacher: 'Mrs. Moraa', 
-          subject: 'Mathematics', 
-          date: 'June 5, 2023', 
-          message: 'Lucy demonstrates exceptional skills in algebra and is always helping her classmates.'
-        },
-        { 
-          teacher: 'Mr. Kamau', 
-          subject: 'English', 
-          date: 'May 30, 2023', 
-          message: 'Lucy is an excellent student. Her creative writing skills are particularly impressive.'
-        },
-        { 
-          teacher: 'Mrs. Njau', 
-          subject: 'History', 
-          date: 'May 22, 2023', 
-          message: 'Lucy shows a deep interest in historical events and contributes well to class discussions.'
-        },
-      ]
-    }
-  ];
+  // Handle no children case
+  if (children && children.length === 0) {
+    return (
+      <div className="page-container">
+        <PageHeader 
+          title={`Welcome, ${user.firstName}`}
+          description="Monitor your child's academic progress"
+        />
+        
+        <Card className="my-8">
+          <CardContent className="py-8">
+            <div className="text-center">
+              <h2 className="text-xl font-semibold mb-2">No students found</h2>
+              <p className="text-muted-foreground mb-4">
+                You don't have any students linked to your account yet.
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Please contact the school administration to add your children to your account.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
   
-  const childData = children[selectedChild];
+  const selectedChildData = children?.find(child => child.id === selectedChild);
+  const childStats = calculateStats();
   
-  const getGradeColor = (grade: string) => {
-    const firstChar = grade.charAt(0);
-    if (firstChar === 'A') return 'text-green-600';
-    if (firstChar === 'B') return 'text-blue-600';
-    if (firstChar === 'C') return 'text-amber-600';
-    if (firstChar === 'D') return 'text-orange-600';
-    return 'text-red-600';
+  // Format grades data for display
+  const getGradeDisplay = (score: number) => {
+    if (score >= 80) return { grade: 'A', color: 'text-green-600' };
+    if (score >= 70) return { grade: 'B', color: 'text-blue-600' };
+    if (score >= 60) return { grade: 'C', color: 'text-amber-600' };
+    if (score >= 50) return { grade: 'D', color: 'text-orange-600' };
+    return { grade: 'E', color: 'text-red-600' };
   };
   
   return (
@@ -168,34 +237,36 @@ const ParentDashboard = () => {
       />
       
       <div className="mb-6 animate-fade-in">
-        <div className="flex items-center space-x-4 mb-6">
-          <Avatar className="h-16 w-16 border-2 border-primary">
-            <AvatarFallback className="text-lg font-semibold bg-primary/10 text-primary">
-              {childData.name.split(' ').map(n => n[0]).join('')}
-            </AvatarFallback>
-          </Avatar>
-          <div>
-            <h2 className="text-2xl font-bold">{childData.name}</h2>
-            <p className="text-muted-foreground">{childData.grade}</p>
+        {selectedChildData && (
+          <div className="flex items-center space-x-4 mb-6">
+            <Avatar className="h-16 w-16 border-2 border-primary">
+              <AvatarFallback className="text-lg font-semibold bg-primary/10 text-primary">
+                {`${selectedChildData.firstName.charAt(0)}${selectedChildData.lastName.charAt(0)}`}
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <h2 className="text-2xl font-bold">{`${selectedChildData.firstName} ${selectedChildData.lastName}`}</h2>
+              <p className="text-muted-foreground">{`${selectedChildData.grade} ${selectedChildData.stream || ''}`}</p>
+            </div>
           </div>
-        </div>
+        )}
         
         <div className="flex flex-wrap gap-2">
-          {children.map((child, index) => (
+          {children?.map((child) => (
             <Button
               key={child.id}
-              variant={index === selectedChild ? "default" : "outline"}
-              onClick={() => setSelectedChild(index)}
+              variant={child.id === selectedChild ? "default" : "outline"}
+              onClick={() => setSelectedChild(child.id)}
               className="transition-all"
             >
-              {child.name}
+              {`${child.firstName} ${child.lastName}`}
             </Button>
           ))}
         </div>
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        {childData.stats.map((stat, index) => (
+        {childStats.map((stat, index) => (
           <DataCard
             key={index}
             title={stat.title}
@@ -221,36 +292,49 @@ const ParentDashboard = () => {
               <CardTitle className="text-lg">Academic Performance</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-6">
-                {childData.subjects.map((subject, index) => (
-                  <div key={index} className="space-y-2">
-                    <div className="flex justify-between items-end">
-                      <div>
-                        <div className="flex items-center">
-                          <span className="font-medium">{subject.name}</span>
-                          <span className={`ml-2 font-bold ${getGradeColor(subject.grade)}`}>
-                            {subject.grade}
-                          </span>
+              {gradesLoading ? (
+                <div className="py-8 text-center">
+                  <span className="loader"></span>
+                </div>
+              ) : grades && grades.length > 0 ? (
+                <div className="space-y-6">
+                  {grades.map((grade, index) => {
+                    const { grade: letterGrade, color } = getGradeDisplay(grade.score);
+                    return (
+                      <div key={index} className="space-y-2">
+                        <div className="flex justify-between items-end">
+                          <div>
+                            <div className="flex items-center">
+                              <span className="font-medium">{grade.subjects?.name || 'Unknown Subject'}</span>
+                              <span className={`ml-2 font-bold ${color}`}>
+                                {letterGrade}
+                              </span>
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              Teacher: {grade.teachers ? `${grade.teachers.first_name} ${grade.teachers.last_name}` : 'Unknown'}
+                            </div>
+                          </div>
+                          <div className="text-xl font-bold">{grade.score}<span className="text-sm text-muted-foreground ml-1">%</span></div>
                         </div>
-                        <div className="text-xs text-muted-foreground">
-                          Teacher: {subject.teacher}
+                        <div className="h-2 bg-secondary rounded-full">
+                          <div 
+                            className={`h-2 rounded-full ${
+                              grade.score >= 80 ? 'bg-green-500' :
+                              grade.score >= 70 ? 'bg-primary' :
+                              grade.score >= 60 ? 'bg-amber-500' : 'bg-red-500'
+                            }`}
+                            style={{width: `${grade.score}%`}}
+                          />
                         </div>
                       </div>
-                      <div className="text-xl font-bold">{subject.percentage}<span className="text-sm text-muted-foreground ml-1">%</span></div>
-                    </div>
-                    <div className="h-2 bg-secondary rounded-full">
-                      <div 
-                        className={`h-2 rounded-full ${
-                          subject.percentage >= 80 ? 'bg-green-500' :
-                          subject.percentage >= 70 ? 'bg-primary' :
-                          subject.percentage >= 60 ? 'bg-amber-500' : 'bg-red-500'
-                        }`}
-                        style={{width: `${subject.percentage}%`}}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="py-8 text-center text-muted-foreground">
+                  No grades available yet.
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -261,20 +345,36 @@ const ParentDashboard = () => {
               <CardTitle className="text-lg">Recent Teacher Feedback</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-6">
-                {childData.feedback.map((item, index) => (
-                  <div key={index} className="p-4 rounded-lg border">
-                    <div className="flex justify-between mb-2">
-                      <div>
-                        <h4 className="font-medium">{item.teacher}</h4>
-                        <p className="text-sm text-muted-foreground">{item.subject}</p>
+              {feedbackLoading ? (
+                <div className="py-8 text-center">
+                  <span className="loader"></span>
+                </div>
+              ) : feedback && feedback.length > 0 ? (
+                <div className="space-y-6">
+                  {feedback.map((item, index) => (
+                    <div key={index} className="p-4 rounded-lg border">
+                      <div className="flex justify-between mb-2">
+                        <div>
+                          <h4 className="font-medium">
+                            {item.teachers ? `${item.teachers.first_name} ${item.teachers.last_name}` : 'Unknown Teacher'}
+                          </h4>
+                          <p className="text-sm text-muted-foreground">
+                            {item.subjects?.name || 'Unknown Subject'}
+                          </p>
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          {new Date(item.date).toLocaleDateString()}
+                        </div>
                       </div>
-                      <div className="text-sm text-muted-foreground">{item.date}</div>
+                      <p className="text-sm">"{item.content}"</p>
                     </div>
-                    <p className="text-sm">"{item.message}"</p>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="py-8 text-center text-muted-foreground">
+                  No feedback available yet.
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -285,27 +385,10 @@ const ParentDashboard = () => {
               <CardTitle className="text-lg">Attendance Record</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center justify-center my-6">
-                <div className="text-center">
-                  <div className="text-5xl font-bold text-primary">
-                    {childData.stats[1].value}
-                  </div>
-                  <p className="text-muted-foreground mt-2">Overall Attendance Rate</p>
-                </div>
-              </div>
-              
-              <div className="space-y-4 mt-6">
-                <h3 className="font-medium">Recent Absences</h3>
-                {childData.id === 1 ? (
-                  <div className="p-4 rounded-lg border border-amber-200 bg-amber-50 text-amber-800">
-                    <p className="font-medium">May 12, 2023</p>
-                    <p className="text-sm">Reason: Medical appointment</p>
-                  </div>
-                ) : (
-                  <div className="p-4 rounded-lg bg-muted text-center">
-                    <p className="text-muted-foreground">No absences in the last 60 days.</p>
-                  </div>
-                )}
+              <div className="py-8 text-center">
+                <p className="text-muted-foreground">
+                  Attendance tracking will be available soon.
+                </p>
               </div>
             </CardContent>
           </Card>
