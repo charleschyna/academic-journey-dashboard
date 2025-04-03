@@ -1,3 +1,5 @@
+// Simplified type definitions for MySQL compatibility layer
+
 export type Json =
   | string
   | number
@@ -6,158 +8,102 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
+// Simplified Database type for compatibility
 export type Database = {
   public: {
     Tables: {
       feedback: {
         Row: {
-          comment: string
+          content: string
           created_at: string | null
           id: string
-          student_id: string | null
-          teacher_id: string | null
+          student_id: string
+          teacher_id: string
+          date: string
         }
         Insert: {
-          comment: string
+          content: string
           created_at?: string | null
           id?: string
-          student_id?: string | null
-          teacher_id?: string | null
+          student_id: string
+          teacher_id: string
+          date: string
         }
         Update: {
-          comment?: string
+          content?: string
           created_at?: string | null
           id?: string
-          student_id?: string | null
-          teacher_id?: string | null
+          student_id?: string
+          teacher_id?: string
+          date?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "feedback_student_id_fkey"
-            columns: ["student_id"]
-            isOneToOne: false
-            referencedRelation: "students"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "feedback_teacher_id_fkey"
-            columns: ["teacher_id"]
-            isOneToOne: false
-            referencedRelation: "teachers"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: any[]
       }
       grades: {
         Row: {
           created_at: string | null
           id: string
           score: number
-          student_id: string | null
-          subject_id: string | null
-          teacher_id: string | null
+          student_id: string
+          subject_id: string
+          teacher_id: string
           term: string
-          year: number
+          academic_year: string
+          comment?: string | null
         }
         Insert: {
           created_at?: string | null
           id?: string
           score: number
-          student_id?: string | null
-          subject_id?: string | null
-          teacher_id?: string | null
+          student_id: string
+          subject_id: string
+          teacher_id: string
           term: string
-          year: number
+          academic_year: string
+          comment?: string | null
         }
         Update: {
           created_at?: string | null
           id?: string
           score?: number
-          student_id?: string | null
-          subject_id?: string | null
-          teacher_id?: string | null
+          student_id?: string
+          subject_id?: string
+          teacher_id?: string
           term?: string
-          year?: number
+          academic_year?: string
+          comment?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "grades_student_id_fkey"
-            columns: ["student_id"]
-            isOneToOne: false
-            referencedRelation: "students"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "grades_subject_id_fkey"
-            columns: ["subject_id"]
-            isOneToOne: false
-            referencedRelation: "subjects"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "grades_teacher_id_fkey"
-            columns: ["teacher_id"]
-            isOneToOne: false
-            referencedRelation: "teachers"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      parents: {
-        Row: {
-          created_at: string | null
-          email: string | null
-          first_name: string
-          id: string
-          last_name: string
-          phone: string | null
-          student_id: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          email?: string | null
-          first_name: string
-          id?: string
-          last_name: string
-          phone?: string | null
-          student_id?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          email?: string | null
-          first_name?: string
-          id?: string
-          last_name?: string
-          phone?: string | null
-          student_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "parents_student_id_fkey"
-            columns: ["student_id"]
-            isOneToOne: false
-            referencedRelation: "students"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: any[]
       }
       profiles: {
         Row: {
           created_at: string | null
           id: string
+          first_name: string
+          last_name: string
+          email: string
           role: string
+          updated_at: string | null
         }
         Insert: {
           created_at?: string | null
           id: string
+          first_name: string
+          last_name: string
+          email: string
           role: string
+          updated_at?: string | null
         }
         Update: {
           created_at?: string | null
           id?: string
+          first_name?: string
+          last_name?: string
+          email?: string
           role?: string
+          updated_at?: string | null
         }
-        Relationships: []
+        Relationships: any[]
       }
       students: {
         Row: {
@@ -165,7 +111,7 @@ export type Database = {
           created_at: string | null
           date_of_birth: string
           first_name: string
-          grade: string | null
+          grade: string
           id: string
           last_name: string
           parent_id: string | null
@@ -176,7 +122,7 @@ export type Database = {
           created_at?: string | null
           date_of_birth: string
           first_name: string
-          grade?: string | null
+          grade: string
           id?: string
           last_name: string
           parent_id?: string | null
@@ -187,13 +133,13 @@ export type Database = {
           created_at?: string | null
           date_of_birth?: string
           first_name?: string
-          grade?: string | null
+          grade?: string
           id?: string
           last_name?: string
           parent_id?: string | null
           stream?: string | null
         }
-        Relationships: []
+        Relationships: any[]
       }
       subjects: {
         Row: {
@@ -214,34 +160,28 @@ export type Database = {
           id?: string
           name?: string
         }
-        Relationships: []
+        Relationships: any[]
       }
       teachers: {
         Row: {
           created_at: string | null
-          email: string
-          first_name: string
           id: string
-          last_name: string
-          staff_id: string
+          user_id: string
+          subjects_taught: string[]
         }
         Insert: {
           created_at?: string | null
-          email: string
-          first_name: string
           id?: string
-          last_name: string
-          staff_id: string
+          user_id: string
+          subjects_taught?: string[]
         }
         Update: {
           created_at?: string | null
-          email?: string
-          first_name?: string
           id?: string
-          last_name?: string
-          staff_id?: string
+          user_id?: string
+          subjects_taught?: string[]
         }
-        Relationships: []
+        Relationships: any[]
       }
     }
     Views: {
