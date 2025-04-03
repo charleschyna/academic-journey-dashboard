@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -171,9 +171,14 @@ const Login = () => {
           </CardFooter>
         </Card>
         
-        <p className="text-center mt-6 text-sm text-muted-foreground">
-          Don't have an account? Contact your school administrator.
-        </p>
+        <CardFooter className="flex flex-col space-y-2">
+          <div className="text-center text-sm">
+            Don't have an account?{" "}
+            <Link to="/signup" className="text-blue-600 hover:underline">
+              Create account
+            </Link>
+          </div>
+        </CardFooter>
       </div>
     </div>
   );

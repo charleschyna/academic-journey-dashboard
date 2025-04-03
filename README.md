@@ -1,3 +1,149 @@
+# Academic Journey Dashboard
+
+A comprehensive school management system for administrators, teachers, and parents. 
+
+## Tech Stack
+
+- **Frontend**: React, TypeScript, Vite, TailwindCSS, shadcn-ui
+- **Backend**: Express.js, Node.js
+- **Database**: MySQL
+- **Authentication**: JWT-based authentication
+
+## Features
+
+- **Role-based Access Control**: Different views and permissions for administrators, teachers, and parents
+- **Student Management**: Track student information and academic progress
+- **Grade Management**: Record and view student grades
+- **Feedback System**: Allow teachers to provide feedback on student performance
+- **Reporting**: Generate academic reports and visualize performance data
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js (v14+)
+- MySQL (v8+)
+
+### Database Setup
+
+1. Create a MySQL database:
+
+```sql
+CREATE DATABASE academic_journey;
+```
+
+2. Import the schema:
+
+```bash
+mysql -u your_username -p academic_journey < mysql_schema.sql
+```
+
+### Backend Setup
+
+1. Navigate to the server directory:
+
+```bash
+cd src/server
+```
+
+2. Install dependencies:
+
+```bash
+npm install
+```
+
+3. Create a `.env` file based on `.env.example`:
+
+```
+# API Configuration
+VITE_API_URL=http://localhost:5000/api
+
+# MySQL Database Configuration
+DB_HOST=localhost
+DB_USER=your_username
+DB_PASSWORD=your_password
+DB_NAME=academic_journey
+
+# JWT Configuration
+JWT_SECRET=your_secure_jwt_secret
+JWT_EXPIRES_IN=1d
+
+# Server Configuration
+PORT=5000
+```
+
+4. Start the server:
+
+```bash
+npm run dev
+```
+
+### Frontend Setup
+
+1. Install dependencies from the project root:
+
+```bash
+npm install
+```
+
+2. Create a `.env` file in the project root:
+
+```
+VITE_API_URL=http://localhost:5000/api
+```
+
+3. Start the frontend development server:
+
+```bash
+npm run dev
+```
+
+## User Roles
+
+### Administrator
+
+- Manage users (teachers, parents)
+- Manage students
+- Manage subjects
+- View all grades and feedback
+- Generate reports
+
+### Teacher
+
+- View assigned students
+- Record grades
+- Provide feedback
+- View academic performance
+
+### Parent
+
+- View their children's information
+- View their children's grades and academic performance
+- View feedback from teachers
+
+## Development
+
+### Project Structure
+
+- `/src` - Frontend React application
+- `/src/server` - Backend Express application
+- `/src/components` - Reusable UI components
+- `/src/pages` - Page components for different routes
+- `/src/lib` - Utility functions and services
+- `/src/types` - TypeScript type definitions
+
+### Running Both Frontend and Backend
+
+To run both the frontend and backend concurrently:
+
+```bash
+# Start the backend
+npm run server
+
+# In a separate terminal, start the frontend
+npm run dev
+```
+
 # Welcome to your Lovable project
 
 ## Project info
