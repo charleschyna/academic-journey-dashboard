@@ -25,6 +25,9 @@ import SettingsPage from "./pages/admin/SettingsPage";
 // Teacher pages
 import TeacherDashboard from "./pages/teacher/TeacherDashboard";
 import GradeManagement from "./pages/teacher/GradeManagement";
+import ClassManagement from "./pages/teacher/ClassManagement";
+import FeedbackManagement from "./pages/teacher/FeedbackManagement";
+import ClassAnalytics from "./pages/teacher/ClassAnalytics";
 
 // Parent pages
 import ParentDashboard from "./pages/parent/ParentDashboard";
@@ -85,8 +88,10 @@ const App = () => {
                   {/* Teacher routes */}
                   <Route path="/teacher" element={<TeacherDashboard />} />
                   <Route path="/teacher/grades" element={<GradeManagement />} />
-                  <Route path="/teacher/students" element={<ManageUsers />} />
-                  <Route path="/teacher/feedback" element={<ManageUsers />} />
+                  <Route path="/teacher/classes" element={<ClassManagement />} />
+                  <Route path="/teacher/students" element={<ClassManagement />} />
+                  <Route path="/teacher/feedback" element={<FeedbackManagement />} />
+                  <Route path="/teacher/analytics" element={<ClassAnalytics />} />
                   
                   {/* Parent routes - ensure these are correctly defined */}
                   <Route path="/parent" element={<ParentDashboard />} />

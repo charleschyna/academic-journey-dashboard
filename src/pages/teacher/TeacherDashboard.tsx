@@ -95,9 +95,7 @@ const TeacherDashboard = () => {
           students:student_id(*),
           subjects:subject_id(*)
         `)
-        .eq('teacher_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(4);
+        .eq('teacher_id', user.id);
         
       if (error) {
         toast.error('Error loading recent grades');
@@ -105,7 +103,9 @@ const TeacherDashboard = () => {
         return [];
       }
       
-      return data as GradeWithDetails[];
+      return ((data || []) as GradeWithDetails[])
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        .slice(0, 4);
     },
     enabled: !!user,
   });

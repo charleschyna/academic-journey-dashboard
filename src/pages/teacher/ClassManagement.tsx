@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { Search, Users, BookOpen, FileText, MessageSquare, FileSpreadsheet, ChevronRight } from 'lucide-react';
+import { Search, Users, BookOpen, FileText, MessageSquare, FileSpreadsheet, ChevronRight, Plus } from 'lucide-react';
 import { useRequireAuth } from '@/lib/auth';
 import PageHeader from '@/components/ui-custom/PageHeader';
 import { Input } from '@/components/ui/input';
