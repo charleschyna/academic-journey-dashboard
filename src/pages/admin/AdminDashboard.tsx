@@ -34,7 +34,7 @@ const AdminDashboard = () => {
       
       try {
         // For development if API is not connected
-        if (process.env.NODE_ENV === 'development') {
+        if (import.meta.env.DEV) {
           // Return mock data
           return {
             studentCount: 120,
@@ -62,7 +62,7 @@ const AdminDashboard = () => {
     queryFn: async () => {
       try {
         // For development if API is not connected
-        if (process.env.NODE_ENV === 'development') {
+        if (import.meta.env.DEV) {
           // Return mock data
           return [
             { subject: 'Mathematics', average: 68, change: 2.5 },

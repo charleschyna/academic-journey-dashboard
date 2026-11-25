@@ -79,7 +79,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setIsLoading(true);
     try {
       // For development without API connection
-      if (process.env.NODE_ENV === 'development' && !API_URL) {
+      if (import.meta.env.DEV && !API_URL) {
         // Mock login for development - Use the specified role based on email
         const mockUser: User = {
           id: "mock-user-id",
@@ -146,7 +146,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setIsLoading(true);
     try {
       // For development without API connection
-      if (process.env.NODE_ENV === 'development' && !API_URL) {
+      if (import.meta.env.DEV && !API_URL) {
         // Mock registration for development
         const mockUser: User = {
           id: "mock-user-id",

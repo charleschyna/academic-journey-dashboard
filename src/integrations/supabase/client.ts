@@ -3,7 +3,8 @@
 import { mysqlClient } from '../mysql/client';
 
 // Create a compatibility interface to make migration easier
-export const supabase = {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const supabase: any = {
   from: (table: string) => {
     return {
       // SELECT operations
